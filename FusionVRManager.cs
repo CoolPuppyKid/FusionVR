@@ -1,3 +1,5 @@
+// Updated to fusion 2 by coolpuppykid you can remove this comment btw if you want
+
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -16,9 +18,12 @@ namespace Fusion.VR
     {
         public static FusionVRManager Manager { get; private set; }
 
+        // now private cause who in their right mind makes public api keys
+        // ok well now i made it SerializeField so like that kinda ruins the point
+        [SerializeField] string FusionAppId;
+        [SerializeField] string VoiceAppId;
+
         [Header("Photon")]
-        public string FusionAppId;
-        public string VoiceAppId;
         [Tooltip("Please read https://doc.photonengine.com/en-us/pun/current/connection-and-authentication/regions for more information.\nLeave this empty to default to the nearest region for the player.")]
         public string Region = "eu";
 
@@ -95,11 +100,9 @@ namespace Fusion.VR
             bool b = CheckForRig(this);
             if (b)
             {
-                if (string.IsNullOrEmpty(FusionAppId))
-                    FusionAppId = Photon.Realtime.PhotonAppSettings.Instance.AppSettings.AppIdFusion;
-
-                if (string.IsNullOrEmpty(VoiceAppId))
-                    VoiceAppId = Photon.Realtime.PhotonAppSettings.Instance.AppSettings.AppIdVoice;
+                // changed to work with fusion 2
+                FusionAppId = Photon.Realtime.PhotonAppSettings.Global.AppSettings.AppIdFusion;
+                VoiceAppId = Photon.Realtime.PhotonAppSettings.Global.AppSettings.AppIdVoice;
 
                 Debug.Log("Attempted to set default values");
             }
@@ -173,13 +176,14 @@ namespace Fusion.VR
 
             GameObject voiceAndRunner = Instantiate(Manager.VoiceAndRunner);
 
-            NetworkProjectConfig.Global.EnableHostMigration = true;
-            NetworkProjectConfig.Global.HostMigrationSnapshotInterval = 5;
-            Photon.Realtime.PhotonAppSettings.Instance.AppSettings.AppIdFusion = Manager.FusionAppId;
-            Photon.Realtime.PhotonAppSettings.Instance.AppSettings.AppIdVoice = Manager.VoiceAppId;
+            // i think i did this right
+            NetworkProjectConfig.Global.HostMigration.EnableAutoUpdate = true;
+            NetworkProjectConfig.Global.HostMigration.UpdateDelay = 5;
+            Photon.Realtime.PhotonAppSettings.Global.AppSettings.AppIdFusion = Manager.FusionAppId;
+            Photon.Realtime.PhotonAppSettings.Global.AppSettings.AppIdVoice = Manager.VoiceAppId;
 
             if (!string.IsNullOrEmpty(Manager.Region))
-                Photon.Realtime.PhotonAppSettings.Instance.AppSettings.FixedRegion = Manager.Region;
+                Photon.Realtime.PhotonAppSettings.Global.AppSettings.FixedRegion = Manager.Region;
 
             //Manager.State = ConnectionState.Connecting;
             Manager.Runner = voiceAndRunner.GetComponent<NetworkRunner>();
@@ -190,7 +194,8 @@ namespace Fusion.VR
                 Manager.VoiceClient = voiceAndRunner.GetComponent<FusionVoiceClient>();
             }
 
-            Debug.Log($"Connected - FusionAppId: {Photon.Realtime.PhotonAppSettings.Instance.AppSettings.AppIdFusion} VoiceAppId: {Photon.Realtime.PhotonAppSettings.Instance.AppSettings.AppIdVoice}");
+            // Use for debugging only cause like why?
+            //Debug.Log($"Connected - FusionAppId: {Photon.Realtime.PhotonAppSettings.Global.AppSettings.AppIdFusion} VoiceAppId: {Photon.Realtime.PhotonAppSettings.Global.AppSettings.AppIdVoice}");
 
             if (Manager.JoinRoomOnConnect)
             {

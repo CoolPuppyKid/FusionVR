@@ -17,6 +17,9 @@ using Fusion.VR.Cosmetics;
 using Fusion.VR.Saving;
 using Photon.Voice.Unity;
 
+// WHY IS THIS FILE SO BIGGG
+// k it was not that bad to fix
+
 namespace Fusion.VR.Networking
 {
     public class FusionVRRunner : MonoBehaviour, INetworkRunnerCallbacks
@@ -97,8 +100,6 @@ namespace Fusion.VR.Networking
             Debug.Log($"Runner shutdown: {shutdownReason}");
             Destroy(gameObject);
         }
-        public void OnConnectedToServer(NetworkRunner runner) { }
-        public void OnDisconnectedFromServer(NetworkRunner runner) { }
         public void OnConnectRequest(NetworkRunner runner, NetworkRunnerCallbackArgs.ConnectRequest request, byte[] token) { }
         public void OnConnectFailed(NetworkRunner runner, NetAddress remoteAddress, NetConnectFailedReason reason) { }
         public void OnUserSimulationMessage(NetworkRunner runner, SimulationMessagePtr message) { }
@@ -118,33 +119,32 @@ namespace Fusion.VR.Networking
             });
         }
 
-        private void Resume(NetworkRunner runner)
-        {
-            Debug.Log("Resumed");
-
-            Debug.LogWarning("Host migration is not yet implemented fully");
-
-            /*
-            foreach (NetworkObject r in runner.GetResumeSnapshotNetworkObjects())
-            {
-                if (r.GetComponent<FusionVRPlayer>() != null)
-                {
-                    FusionVRPlayer player = r.GetComponent<FusionVRPlayer>();
-                    runner.Spawn(r, onBeforeSpawned: (runner, newPlayer) =>
-                    {
-                        Debug.Log("Migrated player");
-                        newPlayer.CopyStateFrom(r);
-                    });
-                }
-            }
-            */
-
-            if (FusionVRManager.OnHostMigrationResume != null)
-                FusionVRManager.OnHostMigrationResume.Invoke(runner);
-        }
-
-        public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ArraySegment<byte> data) { }
+        private void Resume(NetworkRunner runner) {}
         public void OnSceneLoadDone(NetworkRunner runner) { }
         public void OnSceneLoadStart(NetworkRunner runner) { }
+
+        public void OnObjectExitAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
+        {
+        }
+
+        public void OnObjectEnterAOI(NetworkRunner runner, NetworkObject obj, PlayerRef player)
+        {
+        }
+
+        public void OnConnectedToServer(NetworkRunner runner)
+        {
+        }
+
+        public void OnDisconnectedFromServer(NetworkRunner runner, NetDisconnectReason reason)
+        {
+        }
+
+        public void OnReliableDataReceived(NetworkRunner runner, PlayerRef player, ReliableKey key, ArraySegment<byte> data)
+        {
+        }
+
+        public void OnReliableDataProgress(NetworkRunner runner, PlayerRef player, ReliableKey key, float progress)
+        {
+        }
     }
 }

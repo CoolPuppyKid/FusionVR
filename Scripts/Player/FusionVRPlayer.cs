@@ -1,3 +1,5 @@
+// Updated to fusion 2 by coolpuppykid you can remove this comment btw if you want
+
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,6 +15,9 @@ namespace Fusion.VR.Player
 {
     public class FusionVRPlayer : NetworkBehaviour
     {
+        //thanks fusion docs https://doc.photonengine.com/fusion/current/getting-started/migration/coming-from-fusion-v1
+        private ChangeDetector _changes;
+
         public static FusionVRPlayer localPlayer;
 
         public int PlayerId { get; private set; }
@@ -39,17 +44,22 @@ namespace Fusion.VR.Player
         public bool HideLocalName = true;
         public bool HideLocalPlayer = false;
 
-        [Header("Networked Variables")]
+        [Header("Networked Variables")] // i tried to make this networked but we need stupid regular variable
         public bool isLocalPlayer;  // Not exactly networked, but you can't make a stupid header without a regular stupid variable
-        [Networked(OnChanged = nameof(OnNickNameChanged))]
+
+        // we should enforce a character limit in the name cause we dont want a network overflow cause that would be very very bad
+        [Networked, OnChangedRender(nameof(OnNickNameChanged))]
         public NetworkString<_32> NickName { get; set; } // I feel as if nobody is going to have their name over 32 characters, feel free to change it though
-        [Networked(OnChanged = nameof(OnColourChanged))]
-        public Color Colour { get; set; }
-        [Networked(OnChanged = nameof(OnCosmeticsChanged)), Capacity(10)] // Default is max 10, because beyond that the game would probably start lagging
+        [Networked, OnChangedRender(nameof(OnColourChanged))]
+        public Color Colour { get; set; } 
+        // coolpuppykid dont forget that below this comment is the Cosmetics networked tag :D
+        [Networked, OnChangedRender(nameof(OnCosmeticsChanged)), Capacity(10)] // Default is max 10, because beyond that the game would probably start lagging
         public NetworkDictionary<NetworkString<_16>, NetworkString<_32>> Cosmetics => default;
 
         public override void Spawned()
         {
+            // fusion 2 is mad confusing
+            _changes = GetChangeDetector(ChangeDetector.Source.SimulationState);
             if (Object.HasInputAuthority)
             {
                 localPlayer = this;
@@ -85,40 +95,51 @@ namespace Fusion.VR.Player
 
         public override void FixedUpdateNetwork()
         {
-            if (!Object.HasInputAuthority)
+            if (GetInput(out FusionVRNetworkedPlayerData data))
             {
-                if (GetInput(out FusionVRNetworkedPlayerData data))
-                {
-                    HeadTransform.TeleportToPositionRotation(data.headPosition, data.headRotation);
-                    LeftHandTransform.TeleportToPositionRotation(data.leftHandPosition, data.leftHandRotation);
-                    RightHandTransform.TeleportToPositionRotation(data.rightHandPosition, data.rightHandRotation);
+                HeadTransform.Teleport(data.headPosition, data.headRotation);
+                LeftHandTransform.Teleport(data.leftHandPosition, data.leftHandRotation);
+                RightHandTransform.Teleport(data.rightHandPosition, data.rightHandRotation);
 
-                    //Debug.Log(data.ToString());
-                }
+                //Debug.Log(data.ToString());
             }
         }
 
-        public static void OnNickNameChanged(Changed<FusionVRPlayer> changed)
+        public void OnNickNameChanged()
         {
-            changed.Behaviour.NameText.text = changed.Behaviour.NickName.Value;
-            changed.Behaviour.gameObject.name = $"Player ({changed.Behaviour.NickName.Value})";
+            NameText.text = NickName.Value;
+            gameObject.name = $"Player ({NickName.Value})";
+            // this creates an error so lets try something else
+            /*foreach (var change in _changes.DetectChanges(this))
+            {
+                switch (NickName)
+                {
+                    case nameof(NickName):
+                        var current = NickName;
+                        NameText.text = NickName.Value;
+                        gameObject.name = $"Player ({NickName.Value})";
+                        break;
+                }
+            }*/
         }
 
-        public static void OnColourChanged(Changed<FusionVRPlayer> changed)
+        public void OnColourChanged()
         {
-            List<Renderer> renderers = changed.Behaviour.renderers;
+            List<Renderer> renderers = this.renderers;
             foreach (Renderer renderer in renderers)
             {
-                renderer.material.color = changed.Behaviour.Colour;
+               renderer.material.color = Colour;
             }
         }
 
-        public static void OnCosmeticsChanged(Changed<FusionVRPlayer> changed)
+        public void OnCosmeticsChanged()
         {
-            List<PlayerCosmeticSlot> slots = changed.Behaviour.cosmeticSlots;
+            // foreach? i was foreach once they locked me in a room a foreach room a foreach room with foreach`s the foreach`s make me crazy
+            // pray to the lord that this works
+            List<PlayerCosmeticSlot> slots = cosmeticSlots;
 
             // Foreach, foreach, foreach, foreach!! We love foreach!!
-            foreach (KeyValuePair<NetworkString<_16>, NetworkString<_32>> cosmetic in changed.Behaviour.Cosmetics)
+            foreach (KeyValuePair<NetworkString<_16>, NetworkString<_32>> cosmetic in Cosmetics)
             {
                 foreach (PlayerCosmeticSlot slot in slots)
                 {
